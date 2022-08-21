@@ -3,6 +3,7 @@ import asyncio
 from discord.ext import commands, tasks
 # Constants
 
+print("Booting")
 PREFIX = ">"
 BOT_NAME = "AppleByte"
 TOKEN = "MTAxMDkxNTc1ODU0MjQyNjE0Mg.GmK2gI.Oh_2tMaLXmivvmHDCxbngh53G7g0xvXXGPXdeU"
