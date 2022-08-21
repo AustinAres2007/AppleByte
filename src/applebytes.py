@@ -11,7 +11,8 @@ intents = discord.Intents.all()
 client = commands.AutoShardedBot(PREFIX, intents=intents)
 
 class AppleByteClient(commands.Bot):
-    def __init__(self)
+    def __init__(self):
+        pass
 async def main():
     await client.start(TOKEN)
 
