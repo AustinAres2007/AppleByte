@@ -3,6 +3,7 @@ import asyncio
 from discord.ext import commands, tasks
 # Constants
 
+print("Booting")
 PREFIX = ">"
 BOT_NAME = "AppleByte"
 TOKEN = "MTAxMDkxNTc1ODU0MjQyNjE0Mg.GmK2gI.Oh_2tMaLXmivvmHDCxbngh53G7g0xvXXGPXdeU"
@@ -11,7 +12,8 @@ intents = discord.Intents.all()
 client = commands.AutoShardedBot(PREFIX, intents=intents)
 
 class AppleByteClient(commands.Bot):
-    def __init__(self)
+    def __init__(self):
+        pass
 async def main():
     await client.start(TOKEN)
 
