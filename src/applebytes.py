@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 
 PREFIX = ">"
 BOT_NAME = "AppleByte"
-TOKEN = "MTAxMDkxNTc1ODU0MjQyNjE0Mg.GmK2gI.Oh_2tMaLXmivvmHDCxbngh53G7g0xvXXGPXdeU"
+TOKEN = "MTAxMDkxNTc1ODU0MjQyNjE0Mg.Gte-10.ckmCeWONg1jgAK9ZbtIgGH3CrtbSILTF-QNIro"
 PATH = os.getcwd()
 
 intents = discord.Intents.all()
