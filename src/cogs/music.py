@@ -24,6 +24,12 @@ class music(commands.Cog):
             responce = "You're not in a voice channel."
 
         await ctx.response.send_message(responce)
+    
+    @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.")
+    @discord.app_commands.describe(media="URL or Video Title")
+    async def play_media(self, ctx: discord.Interaction, media: str):
+        await ctx.response.send_message("This command does nothing atm.")
+        
 
 async def setup(client: commands.Bot):
     await client.add_cog(music(client))
