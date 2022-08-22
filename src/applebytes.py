@@ -15,6 +15,7 @@ class AppleByteClient(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.guilds_queue = {}
+        self.cwd = PATH
 
     def on_ready(self):
         print(f"{BOT_NAME} Online")
@@ -30,4 +31,5 @@ async def main():
     async with AppleByteClient(command_prefix=PREFIX, intents=intents) as client:
         await client.start(TOKEN)
 
+print("Directory: ", PATH)
 asyncio.run(main())

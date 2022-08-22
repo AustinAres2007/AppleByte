@@ -1,6 +1,5 @@
-from code import interact
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 class general(commands.Cog):
     def __init__(self, client, *args, **kwargs):
