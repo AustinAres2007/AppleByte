@@ -9,7 +9,7 @@ BOT_NAME = "AppleByte"
 TOKEN = "MTAxMDkxNTc1ODU0MjQyNjE0Mg.GmK2gI.Oh_2tMaLXmivvmHDCxbngh53G7g0xvXXGPXdeU"
 PATH = os.getcwd()
 
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 
 class AppleByteClient(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
