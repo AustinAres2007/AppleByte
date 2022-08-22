@@ -34,27 +34,27 @@ class music(commands.Cog):
     
     @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.")
     @discord.app_commands.describe(media="URL or Video Title")
-    async def play_media(self, ctx: discord.Interaction, media: str=None):
+    async def play_media(self, ctx: discord.Interaction, media: str):
         if not media:
             return await ctx.response.send_message("Please provide a link / search term.")
 
-        voice_instance: discord.VoiceClient = get(self.client.guilds, guild=ctx.guild)
-        voice_channel: discord.VoiceChannel = ctx.user.voice.channel
+        voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+        voice_channel: discord.VoiceProtocol = ctx.user.voice
 
         # Joins VC if bot is not in one.
         if not (voice_instance and voice_instance.is_connected()):
             if voice_channel:
-                voice_channel.connect()
+                await voice_channel.channel.connect()
             else:
                 return await ctx.response.send_message("You're not in a voice channel.")
         
         if validators.url(media):
-            return
+            pass
         else:
             search_results = youtubesearchpython.VideosSearch(media, limit=1)
-            print(search_results)
+            media_url = search_results.result()["result"][0]
         
-        await ctx.response.send_message("This command performs no actions at the moment.")
+        await ctx.response.send_message(f'Selected: {media_url["title"]}\nLink: {media_url["link"]}')
 
         
 

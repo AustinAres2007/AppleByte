@@ -14,6 +14,7 @@ intents = discord.Intents.all()
 class AppleByteClient(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.guilds_queue = {}
 
     def on_ready(self):
         print(f"{BOT_NAME} Online")
