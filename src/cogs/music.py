@@ -44,11 +44,12 @@ class music(commands.Cog):
     @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.")
     @discord.app_commands.describe(media="URL or Video Title")
     async def play_media(self, ctx: discord.Interaction, media: str):
+        music_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music.wav"
 
         def _download_media(link):
             local_opts = youtube_dl_opts
-            local_opts['outtmpl'] = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music.wav"
-            
+            local_opts['outtmpl'] = music_path
+
             with youtube_dl.YoutubeDL(local_opts) as ydl:
                 ydl.download([str(link)])
 
@@ -72,10 +73,15 @@ class music(commands.Cog):
             media_data = search_results.result()["result"][0]
         
         def play_queue():
-            pass
+            print("Finished Playing")
 
         await ctx.response.send_message(f'Selected: {media_data["title"]}\nLink: {media_data["link"]}')
         _download_media(media_data['link'])
+
+        voice_instance.play(discord.FFmpegPCMAudio(music_path), after=lambda e: play_queue())
+        voice_instance.source = discord.PCMVolumeTransformer(voice_instance.source)
+        voice_instance.volume = 0.6
+        print("No more")
 
 async def setup(client: commands.Bot):
     await client.add_cog(music(client))
