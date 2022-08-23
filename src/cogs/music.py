@@ -1,3 +1,4 @@
+import re
 from threading import local
 import discord, youtubesearchpython, validators, youtube_dl
 from discord.ext import commands, tasks
@@ -14,7 +15,7 @@ youtube_dl_opts = {
     'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'wav',
-            'preferredquality': '256',
+            'preferredquality': '128',
 
     }],
 }
@@ -34,7 +35,7 @@ class music(commands.Cog):
             await voice_instance.move_to(voice_channel)
             responce = f"Moved to {voice_channel.name}"
         elif voice_channel:
-            voice_instance = await voice_channel.connect()
+            voice_instance = await voice_channel.connect(reconnect=True)
             responce = f"Connected to {voice_channel.name}"
         else:
             responce = "You're not in a voice channel."
@@ -62,7 +63,7 @@ class music(commands.Cog):
         # Joins VC if bot is not in one.
         if not (voice_instance and voice_instance.is_connected()):
             if voice_channel:
-                await voice_channel.channel.connect()
+                await voice_channel.channel.connect(reconnect=True)
             else:
                 return await ctx.response.send_message("You're not in a voice channel.")
         
