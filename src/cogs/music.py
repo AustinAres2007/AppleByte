@@ -11,8 +11,6 @@ from discord.utils import get
 youtube_dl_opts = {
     'format': 'bestaudio/best',
     'quiet': True,
-    'simulate': True,
-    'restrictfilenames': True,
     'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'wav',
@@ -49,10 +47,10 @@ class music(commands.Cog):
 
         def _download_media(link):
             local_opts = youtube_dl_opts
-            local_opts['outtmpl'] = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-%(title)s.%(ext)s"
-
+            local_opts['outtmpl'] = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music.wav"
+            
             with youtube_dl.YoutubeDL(local_opts) as ydl:
-                ydl.download([link])
+                ydl.download([str(link)])
 
         if not media:
             return await ctx.response.send_message("Please provide a link / search term.")
@@ -75,16 +73,9 @@ class music(commands.Cog):
         
         def play_queue():
             pass
-            
-        
+
         await ctx.response.send_message(f'Selected: {media_data["title"]}\nLink: {media_data["link"]}')
         _download_media(media_data['link'])
-
-        
-
-            
-            
-
 
 async def setup(client: commands.Bot):
     await client.add_cog(music(client))
