@@ -1,6 +1,6 @@
 import discord
 import asyncio
-import os
+import os, logging
 from discord.ext import commands, tasks
 # Constants
 
@@ -17,13 +17,16 @@ class AppleByteClient(commands.AutoShardedBot):
         self.guilds_queue = {}
         self.cwd = PATH
 
-    def on_ready(self):
+    async def on_ready(self):
         print(f"{BOT_NAME} Online")
     
     async def setup_hook(self):
         for file in os.listdir(f"{PATH}/src/cogs"):
             if file.endswith(".py"):
                 await self.load_extension(f"cogs.{file[:-3]}")
+
+        logging.basicConfig(filename=f"{PATH}/src/data/applebyte.log", level=logging.ERROR, format="%(levelname)s %(name)s %(message)s")
+        self.logger = logging.getLogger(__name__)
 
         await self.tree.sync()
 
