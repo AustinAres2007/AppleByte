@@ -1,4 +1,4 @@
-import discord, youtubesearchpython, youtube_dl, os, concurrent.futures, asyncio
+import discord, youtubesearchpython, youtube_dl, os, threading
 from discord.ext import commands
 from discord.utils import get
 from functools import partial
@@ -45,8 +45,8 @@ class music(commands.Cog):
     @discord.app_commands.describe(media="Video Title")
     async def play_media(self, ctx: discord.Interaction, media: str):
         
-        loop = asyncio.get_event_loop()
         music_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music.wav"
+        finished_downloading = False
 
         try:
             os.remove(music_path)
@@ -60,7 +60,10 @@ class music(commands.Cog):
             local_opts['outtmpl'] = music_path
 
             with youtube_dl.YoutubeDL(local_opts) as ydl:
-                ydl.download([str(link)])
+                ydl.download([str(link)])          
+
+            source = discord.FFmpegOpusAudio(music_path)
+            voice_instance.play(source)
     
         if not media:
             return await ctx.response.send_message("Please provide a link / search term.")
@@ -79,17 +82,8 @@ class music(commands.Cog):
         media_data = search_results.result()["result"][0]
         link = media_data['link']
 
-        def play_queue():
-            print("Finished Playing")
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as thread_pool:
-            loop.run_in_executor(thread_pool, lambda: _download_media(link))
-
         await ctx.response.send_message(f'Selected: {media_data["title"]}\nLink: {link}')
-
-        source = discord.FFmpegOpusAudio(music_path)
-        voice_instance.play(source, after=lambda e: play_queue())
-        
+        threading.Thread(target=_download_media, args=(link,)).start()
 
 
 async def setup(client: commands.Bot):
