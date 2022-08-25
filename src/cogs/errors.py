@@ -1,14 +1,19 @@
-import discord
 from discord.ext import commands
-from discord import errors
+import discord
 
-class ErrorHandlers(commands.Bot):
+
+class ErrorHandler(commands.Cog, name="errors"):
     def __init__(self, client: commands.Bot):
         self.client = client
-        print("Error handlers ready.")
+        client.tree.error(self._handle_error)
 
-    @commands.Cog.listener("on_command_error")
-    async def on_command_error(self, context, exception: errors.CommandError, /) -> None:
-        print(exception)
+    async def _handle_error(self, interaction: discord.Interaction, error: discord.ClientException):
+        try:
+            responce = self.client.command_errors[interaction.command.name][type(error)]
+        except KeyError:
+            responce = str(error)
+        finally:
+            await interaction.response.send_message(responce)
 
 async def setup(client: commands.Bot):
+    await client.add_cog(ErrorHandler(client))

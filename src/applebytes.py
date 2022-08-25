@@ -14,6 +14,7 @@ intents = discord.Intents.all()
 class AppleByteClient(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.queue = {}
         self.cwd = PATH
 
@@ -25,10 +26,12 @@ class AppleByteClient(commands.AutoShardedBot):
             if file.endswith(".py"):
                 await self.load_extension(f"cogs.{file[:-3]}")
 
-        logging.basicConfig(filename=f"{PATH}/src/data/applebyte.log", level=logging.ERROR, format="%(levelname)s %(name)s %(message)s")
+        logging.basicConfig(filename=f"{PATH}/src/data/applebyte.log", level=logging.DEBUG, format="%(levelname)s %(name)s %(message)s")
         self.logger = logging.getLogger(__name__)
 
         await self.tree.sync()
+        self.command_errors = {str(command.name): dict(command.extras) for command in self.tree.walk_commands()}
+        print(self.command_errors)
 
 async def main():
     async with AppleByteClient(command_prefix=PREFIX, intents=intents) as client:

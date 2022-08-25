@@ -2,13 +2,11 @@ import discord
 from discord.ext import commands
 
 class general(commands.Cog):
-    def __init__(self, client, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        print("General Loaded")
+    def __init__(self, client):
         self.client: commands.Bot = client
+        print("General Loaded")
 
-    @discord.app_commands.command(name="test", description="Check if Client is online.")
+    @discord.app_commands.command(name="test", description="Check if Client is online.", extras={'error': "Wait some moments please."})
     async def online(self, ctx: discord.Interaction):
         print("Test command working")
         await ctx.response.send_message("Online")

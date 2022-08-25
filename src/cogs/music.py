@@ -1,3 +1,4 @@
+from http.client import HTTPException
 import discord, youtubesearchpython, youtube_dl, os, threading
 from discord.ext import commands
 from discord.utils import get
@@ -27,7 +28,9 @@ class music(commands.Cog):
         print("Music Loaded")
         self.client = client
     
-    @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.")
+    @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.", extras={
+        discord.ClientException: "Already in VC."
+        })
     @discord.app_commands.checks.cooldown(1, 15)
     async def join_vc(self, ctx: discord.Interaction):
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
@@ -44,12 +47,14 @@ class music(commands.Cog):
 
         await ctx.response.send_message(responce)
     
-    @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.")
+    @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.", extras={
+        discord.ClientException: "Already playing audio.", 
+    })
     @discord.app_commands.describe(media="Media Title")
+    @discord.app_commands.checks.cooldown(1, 20)
     async def play_media(self, ctx: discord.Interaction, media: str):
         
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
-        voice_channel: discord.VoiceChannel = ctx.user.voice.channel
 
         if not voice_instance:
             return await ctx.response.send_message("I'm not in a voice channel.")
@@ -102,7 +107,7 @@ class music(commands.Cog):
         await ctx.response.send_message(f'Selected: {media_data["title"]}\nLink: {link}')
         threading.Thread(target=_download_media, args=(link,)).start()
 
-    @discord.app_commands.command(name='queue', description="Queues a song.")
+    @discord.app_commands.command(name='queue', description="Queues a song.", extras={HTTPException: "Could not send reply."})
     @discord.app_commands.describe(media="Media Title")
     async def queue_media(self, ctx: discord.Interaction, media: str):
         search_results = youtubesearchpython.VideosSearch(media, limit=1)
