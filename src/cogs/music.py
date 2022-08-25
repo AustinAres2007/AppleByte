@@ -85,9 +85,7 @@ class music(commands.Cog):
                     with youtube_dl.YoutubeDL(local_opts) as ydl:
                         ydl.download([str(link)])          
 
-                    print("init audio")
                     source = discord.FFmpegOpusAudio(music_path)
-                    print("Playing")
                     voice_instance.play(source, after=lambda e: queue_proxy())
         
         search_results = youtubesearchpython.VideosSearch(media, limit=1)
