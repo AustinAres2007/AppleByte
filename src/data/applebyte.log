@@ -3615,3 +3615,12 @@ DEBUG discord.gateway Voice websocket frame received: {'op': 6, 'd': 16614269282
 DEBUG discord.gateway Keeping shard ID None voice websocket alive with timestamp 1661426933243.
 DEBUG discord.gateway Sending voice websocket frame: {'op': 3, 'd': 1661426933243}.
 DEBUG discord.gateway Voice websocket frame received: {'op': 6, 'd': 1661426933243}
+DEBUG discord.gateway Keeping shard ID None voice websocket alive with timestamp 1661426938249.
+DEBUG discord.gateway Sending voice websocket frame: {'op': 3, 'd': 1661426938249}.
+DEBUG discord.gateway Voice websocket frame received: {'op': 6, 'd': 1661426938249}
+DEBUG discord.gateway Keeping shard ID None voice websocket alive with timestamp 1661426943255.
+DEBUG discord.gateway Sending voice websocket frame: {'op': 3, 'd': 1661426943255}.
+DEBUG discord.gateway Voice websocket frame received: {'op': 6, 'd': 1661426943255}
+DEBUG discord.gateway Keeping shard ID None voice websocket alive with timestamp 1661426948260.
+DEBUG discord.gateway Sending voice websocket frame: {'op': 3, 'd': 1661426948260}.
+DEBUG discord.gateway Voice websocket frame received: {'op': 6, 'd': 1661426948260}
