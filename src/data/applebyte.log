@@ -1,0 +1,9 @@
+ERROR discord.player Calling the after function failed.
+Traceback (most recent call last):
+  File "/Users/austinares/Desktop/AppleByte/lib/python3.10/site-packages/discord/player.py", line 711, in _call_after
+    self.after(error)
+  File "/Users/austinares/Desktop/AppleByte/src/cogs/music.py", line 95, in <lambda>
+    voice_instance.play(source, after=lambda e: queue_proxy())
+  File "/Users/austinares/Desktop/AppleByte/src/cogs/music.py", line 75, in queue_proxy
+    queue = self.client.queue[ctx.guild_id]
+KeyError: 1009431684925624420

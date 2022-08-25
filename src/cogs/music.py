@@ -8,12 +8,14 @@ from functools import partial
                 determine if the client and the user are in the same voice channel (Play command)
                 Figure out a way of making playlists
 """
+
+PREFERRED_FILEEXTENSION = '.mp3'
 youtube_dl_opts = {
     'format': 'bestaudio/best',
     'quiet': True,
     'postprocessors': [{
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
+            'preferredcodec': 'mp3',
             'preferredquality': '64',
 
     }],
@@ -26,6 +28,7 @@ class music(commands.Cog):
         self.client = client
     
     @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.")
+    @discord.app_commands.checks.cooldown(1, 15)
     async def join_vc(self, ctx: discord.Interaction):
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
         voice_channel: discord.VoiceChannel = ctx.user.voice.channel
@@ -46,6 +49,7 @@ class music(commands.Cog):
     async def play_media(self, ctx: discord.Interaction, media: str):
         
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+        voice_channel: discord.VoiceChannel = ctx.user.voice.channel
 
         if not voice_instance:
             return await ctx.response.send_message("I'm not in a voice channel.")
@@ -53,7 +57,10 @@ class music(commands.Cog):
         if not media:
             return await ctx.response.send_message("Please provide a link / search term.")
 
-        music_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music.wav"
+        if voice_instance.is_playing():
+            return await ctx.response.send_message("I am currently playing audio.")
+        
+        music_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music{PREFERRED_FILEEXTENSION}"
         local_opts = youtube_dl_opts
         local_opts['outtmpl'] = music_path
 

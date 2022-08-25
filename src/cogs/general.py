@@ -14,7 +14,6 @@ class general(commands.Cog):
         await ctx.response.send_message("Online")
 
     @discord.app_commands.command(name="stop", description="Shuts down bot client")
-    @commands.is_owner()
     async def halt(self, ctx: discord.Interaction):
         await ctx.response.send_message("Shutting down.")
         await self.client.close()
