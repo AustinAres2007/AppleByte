@@ -31,7 +31,7 @@ class music(commands.Cog):
     @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.", extras={
         discord.ClientException: "Already in VC."
         })
-    @discord.app_commands.checks.cooldown(1, 15)
+    @discord.app_commands.checks.cooldown(1, 5)
     async def join_vc(self, ctx: discord.Interaction):
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
         voice_channel: discord.VoiceChannel = ctx.user.voice.channel
@@ -76,17 +76,17 @@ class music(commands.Cog):
         except FileNotFoundError:
             pass
         
-        def queue_proxy():
+        def queue_proxy(file: str):
             try:
                 queue = self.client.queue[ctx.guild_id]
                 to_play = queue[0]['link'] if queue else None
 
                 del self.client.queue[ctx.guild_id][0]
-                _download_media(to_play)
+                _download_media(to_play, True)
             except IndexError:
                 return
 
-        def _download_media(link):
+        def _download_media(link: str, queue: bool=False):
             if link:
                 try:
                     if os.path.isfile(music_path):
@@ -94,8 +94,11 @@ class music(commands.Cog):
                 except KeyError:
                     self.client.queue[ctx.guild_id] = []
                 finally:
-                    with youtube_dl.YoutubeDL(local_opts) as ydl:
-                        ydl.download([str(link)])          
+                    if not queue:
+                        with youtube_dl.YoutubeDL(local_opts) as ydl:
+                            ydl.download([str(link)])          
+                    else:
+                        
 
                     source = discord.FFmpegOpusAudio(music_path)
                     voice_instance.play(source, after=lambda e: queue_proxy())

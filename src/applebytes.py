@@ -31,7 +31,6 @@ class AppleByteClient(commands.AutoShardedBot):
 
         await self.tree.sync()
         self.command_errors = {str(command.name): dict(command.extras) for command in self.tree.walk_commands()}
-        print(self.command_errors)
 
 async def main():
     async with AppleByteClient(command_prefix=PREFIX, intents=intents) as client:
