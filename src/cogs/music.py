@@ -1,5 +1,5 @@
 from urllib.error import HTTPError
-import discord, youtubesearchpython, youtube_dl, os, threading, time
+import discord, youtubesearchpython, youtube_dl, os, threading, time, pathlib
 
 from http.client import HTTPException
 from turtle import down
@@ -78,10 +78,10 @@ class music(commands.Cog):
         local_opts = youtube_dl_opts
         
         def queue_proxy(file: str, _old: str):
+            if os.path.isfile(_old):
+                        os.remove(_old)
             if file:
                 try:
-                    if os.path.isfile(_old):
-                        os.remove(_old)
 
                     _old = file
                     queue = self.client.queue[ctx.guild_id]
@@ -95,12 +95,13 @@ class music(commands.Cog):
 
         def _download_media(link: str, queue: bool, file_to_play: str, _old: str):
             if link:
+                queue_entry = queued_file = None
                 try:
                     queue_entry = self.client.queue[ctx.guild_id][0]
                 except KeyError:
                     self.client.queue[ctx.guild_id] = []
                 except IndexError:
-                    queue_entry = queued_file = None
+                    pass
         
                 def download(d_link: str, filename: str):
                     try:
