@@ -1,5 +1,8 @@
+from urllib.error import HTTPError
+import discord, youtubesearchpython, youtube_dl, os, threading, time
+
 from http.client import HTTPException
-import discord, youtubesearchpython, youtube_dl, os, threading
+from turtle import down
 from discord.ext import commands
 from discord.utils import get
 from functools import partial
@@ -28,6 +31,9 @@ class music(commands.Cog):
         print("Music Loaded")
         self.client = client
     
+    def play_message(self, message: os.PathLike, guild):
+        guild_vc = get(self.client.voice_clients, guild=guild)
+        guild_vc.pause()
     @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.", extras={
         discord.ClientException: "Already in VC."
         })
@@ -49,11 +55,13 @@ class music(commands.Cog):
     
     @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.", extras={
         discord.ClientException: "Already playing audio.", 
+        youtube_dl.utils.DownloadError: "Error downloading media, please retry."
     })
     @discord.app_commands.describe(media="Media Title")
     @discord.app_commands.checks.cooldown(1, 20)
     async def play_media(self, ctx: discord.Interaction, media: str):
-        
+        # TODO: test if single songs work, and delete all songs after play command has finished.
+        processing = []
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
 
         if not voice_instance:
@@ -64,51 +72,65 @@ class music(commands.Cog):
 
         if voice_instance.is_playing():
             return await ctx.response.send_message("I am currently playing audio.")
-        
-        music_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music{PREFERRED_FILEEXTENSION}"
+
+        base_path = f"{self.client.cwd}/src/data/music/"
+        music_path = f"{base_path}{ctx.guild_id}-music{PREFERRED_FILEEXTENSION}"
         local_opts = youtube_dl_opts
-        local_opts['outtmpl'] = music_path
-
-        try:
-            os.remove(music_path)
-        except PermissionError:
-            return await ctx.response.send_message("You are already playing audio.")
-        except FileNotFoundError:
-            pass
         
-        def queue_proxy(file: str):
-            try:
-                queue = self.client.queue[ctx.guild_id]
-                to_play = queue[0]['link'] if queue else None
+        def queue_proxy(file: str, _old: str):
+            if file:
+                try:
+                    if os.path.isfile(_old):
+                        os.remove(_old)
 
-                del self.client.queue[ctx.guild_id][0]
-                _download_media(to_play, True)
-            except IndexError:
-                return
+                    _old = file
+                    queue = self.client.queue[ctx.guild_id]
+                    to_play = queue[0]['link'] if queue else None
 
-        def _download_media(link: str, queue: bool=False):
+                    del self.client.queue[ctx.guild_id][0]
+                    return _download_media(to_play, True, f"{base_path}{file}", _old)
+                except IndexError:
+                    return
+            return
+
+        def _download_media(link: str, queue: bool, file_to_play: str, _old: str):
             if link:
                 try:
-                    if os.path.isfile(music_path):
-                        os.remove(music_path)
+                    queue_entry = self.client.queue[ctx.guild_id][0]
                 except KeyError:
                     self.client.queue[ctx.guild_id] = []
-                finally:
-                    if not queue:
+                except IndexError:
+                    queue_entry = queued_file = None
+        
+                def download(d_link: str, filename: str):
+                    try:
+                        local_opts['outtmpl'] = f"{base_path}{filename}"
                         with youtube_dl.YoutubeDL(local_opts) as ydl:
-                            ydl.download([str(link)])          
-                    else:
-                        
+                            processing.append(filename)
+                            ydl.download([d_link])   
+                            time.sleep(4)
+                            processing.remove(filename)       
+                    except (youtube_dl.utils.DownloadError, HTTPError):
+                        pass
 
-                    source = discord.FFmpegOpusAudio(music_path)
-                    voice_instance.play(source, after=lambda e: queue_proxy())
+                if not queue:
+                    download(link, f"{ctx.guild_id}-music{PREFERRED_FILEEXTENSION}")
+                if queue_entry:
+                    queued_file = f"{ctx.guild_id}-{queue_entry['id']}{PREFERRED_FILEEXTENSION}"
+                    threading.Thread(target=download, args=(queue_entry['id'],queued_file,)).start()
+
+                while os.path.basename(file_to_play) in processing:
+                    pass
+
+                source = discord.FFmpegOpusAudio(file_to_play)
+                voice_instance.play(source, after=lambda e: queue_proxy(queued_file, _old,))
         
         search_results = youtubesearchpython.VideosSearch(media, limit=1)
         media_data = search_results.result()["result"][0]
         link = media_data['link']
 
         await ctx.response.send_message(f'Selected: {media_data["title"]}\nLink: {link}')
-        threading.Thread(target=_download_media, args=(link,)).start()
+        threading.Thread(target=_download_media, args=(link, False, music_path, music_path,)).start()
 
     @discord.app_commands.command(name='queue', description="Queues a song.", extras={HTTPException: "Could not send reply."})
     @discord.app_commands.describe(media="Media Title")
@@ -117,7 +139,8 @@ class music(commands.Cog):
         media_data = search_results.result()["result"][0]
         video_data = {
                     "link": media_data['link'],
-                    "name": media_data['title']
+                    "name": "-".join(media_data['title'].lower().split(' ')),
+                    "id": media_data['id']
         }
         try:
             self.client.queue[ctx.guild_id].append(video_data)
