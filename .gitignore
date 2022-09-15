@@ -2,11 +2,6 @@
 /Include/
 /Lib/
 /Scripts/
-.vscode
-.git
-bin
-include
-lib
 pyvenv.cfg
 *.pyc
 *.wav
