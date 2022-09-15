@@ -2,7 +2,6 @@ from http.client import HTTPException
 import discord, youtubesearchpython, youtube_dl, os, threading
 from discord.ext import commands
 from discord.utils import get
-from functools import partial
 
 """
             TODO:

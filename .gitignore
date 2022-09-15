@@ -1,9 +1,11 @@
 /include/
 /bin/
 /lib/
+/share/
+/etc/
 pyvenv.cfg
 *.pyc
-*.wav
 *.DS_Store
 *.mp3
+*.log
 
