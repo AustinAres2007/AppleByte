@@ -1,3 +1,6 @@
+/include/
+/bin/
+/lib/
 pyvenv.cfg
 *.pyc
 *.wav
