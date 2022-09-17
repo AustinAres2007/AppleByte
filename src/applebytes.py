@@ -2,14 +2,16 @@ import discord
 import asyncio
 import os, logging
 from discord.ext import commands, tasks
+token_file = open("token.txt", 'r')
 # Constants
 
 PREFIX = ">"
 BOT_NAME = "AppleByte"
-TOKEN = "MTAxMDkxNTc1ODU0MjQyNjE0Mg.Gte-10.ckmCeWONg1jgAK9ZbtIgGH3CrtbSILTF-QNIro"
+TOKEN = token_file.read()
 PATH = os.getcwd()
 
 intents = discord.Intents.all()
+token_file.close()
 
 class AppleByteClient(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):

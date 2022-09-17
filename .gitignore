@@ -3,7 +3,9 @@
 /lib/
 /share/
 /etc/
+/src/data/
 pyvenv.cfg
+token.txt
 *.pyc
 *.DS_Store
 *.mp3
