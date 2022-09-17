@@ -2,11 +2,15 @@ import discord
 import asyncio
 import os, logging
 from discord.ext import commands, tasks
-token_file = open("token.txt", 'r')
+
 # Constants
 
+PATH = os.getcwd()
 PREFIX = ">"
 BOT_NAME = "AppleByte"
+
+token_file = open(f"{PATH}/token.txt", 'r')
+
 TOKEN = token_file.read()
 PATH = os.getcwd()
 
@@ -33,7 +37,6 @@ class AppleByteClient(commands.AutoShardedBot):
 
         await self.tree.sync()
         self.command_errors = {str(command.name): dict(command.extras) for command in self.tree.walk_commands()}
-        print(self.command_errors)
 
 async def main():
     async with AppleByteClient(command_prefix=PREFIX, intents=intents) as client:
