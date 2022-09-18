@@ -9,7 +9,7 @@ PATH = os.getcwd()
 PREFIX = ">"
 BOT_NAME = "AppleByte"
 
-token_file = open(f"{PATH}/token.txt", 'r')
+token_file = open(f"{PATH}/src/token.txt", 'r')
 
 TOKEN = token_file.read()
 PATH = os.getcwd()
