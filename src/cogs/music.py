@@ -27,10 +27,7 @@ class music(commands.Cog):
         print("Music Loaded")
         self.client = client
     
-    @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.", extras={
-        discord.ClientException: "Already in VC."
-        })
-
+    @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.")
     @discord.app_commands.checks.cooldown(1, 15)
     async def join_vc(self, ctx: discord.Interaction):
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
@@ -120,10 +117,8 @@ class music(commands.Cog):
         else:
             await ctx.channel.send(f'Selected: {media_data["title"]}\nLink: {link}\nDownloading..\n')
             threading.Thread(target=_download_media, args=(link, media_data,)).start()
-
-    @discord.app_commands.command(name='skip', description="Skips media.", extras={AttributeError: "You're not in a voice channel."})
-    @discord.app_commands.checks.cooldown(1, 15)
-    async def skip_media(self, ctx: discord.Interaction):
+    
+    async def voice_checks(ctx, method: str, success_message: str):
         reply = "Error"
         try:
             voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
@@ -132,7 +127,8 @@ class music(commands.Cog):
             try:
                 if voice_instance and voice_instance.is_connected():
                     voice_instance.stop()
-                    reply = f"Skipped Media."
+                    getattr(voice_channel, method)
+                    reply = success_message
                 else:
                     reply = "I am not in any voice channel"
 
@@ -143,6 +139,11 @@ class music(commands.Cog):
             reply = "You're not in a voice channel."
         finally:
             await ctx.response.send_message(reply)
+
+    @discord.app_commands.command(name='skip', description="Skips media.", extras={AttributeError: "You're not in a voice channel."})
+    @discord.app_commands.checks.cooldown(1, 15)
+    async def skip_media(self, ctx: discord.Interaction):
+        await voice_checks(ctx, "stop", "Skipped media.")
 
     @discord.app_commands.command(name='queue', description="Queues a song, or displays the queue if did not pass a keyword.", extras={HTTPException: "Could not send reply."})
     @discord.app_commands.describe(media="Media Title")
@@ -171,6 +172,11 @@ class music(commands.Cog):
             await ctx.response.send_message(f'Added \n\n"{media_data["title"]}" to the queue. \n({media_data["link"]})')
         except KeyError:
             self.client.queue[ctx.guild_id] = []
+
+    @discord.app_commands.command(name="pause", description="Pauses media.")
+    @discord.app_commands.checks.cooldown(1, 10)
+    async def pause_media(self, ctx: discord.Interaction):
+        await voice_checks(ctx, "pause", "Paused media.")
 
 async def setup(client: commands.Bot):
     await client.add_cog(music(client))
