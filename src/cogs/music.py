@@ -9,6 +9,9 @@ from discord.utils import get
                 Figure out a way of making playlists
 """
 
+errors = {
+    "no_vc": "You're not in a voice channel"
+}
 PREFERRED_FILEEXTENSION = '.mp3'
 youtube_dl_opts = {
     'format': 'bestaudio/best',
@@ -20,6 +23,8 @@ youtube_dl_opts = {
 
     }],
 }
+# Main Music cog
+
 class music(commands.Cog):
 
     # Initialisation
@@ -31,37 +36,43 @@ class music(commands.Cog):
         self.client = client
     
     # Joining and Leaving Voice Channel
-    
+
     @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.")
     @discord.app_commands.checks.cooldown(1, 15)
     async def join_vc(self, ctx: discord.Interaction):
-        voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
-        voice_channel: discord.VoiceChannel = ctx.user.voice.channel
+        try:
+            voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+            voice_channel: discord.VoiceChannel = ctx.user.voice.channel
 
-        if voice_instance and voice_instance.is_connected():
-            await voice_instance.move_to(voice_channel)
-            responce = f"Moved to {voice_channel.name}"
-        elif voice_channel:
-            voice_instance = await voice_channel.connect(reconnect=True)
-            responce = f"Connected to {voice_channel.name}"
-        else:
-            responce = "You're not in a voice channel."
+            if voice_instance and voice_instance.is_connected():
+                await voice_instance.move_to(voice_channel)
+                responce = f"Moved to {voice_channel.name}"
+            elif voice_channel:
+                voice_instance = await voice_channel.connect(reconnect=True)
+                responce = f"Connected to {voice_channel.name}"
 
-        await ctx.response.send_message(responce)
-    
+        except AttributeError:
+            responce = errors['no_vc']
+        finally:
+            await ctx.response.send_message(responce)
+
     @discord.app_commands.command(name="disconnect", description="Disconnects from users voice channel.")
     @discord.app_commands.checks.cooldown(1, 20)
     async def disconnect_vc(self, ctx: discord.Interaction):
-        voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
-        voice_channel: discord.VoiceChannel = ctx.user.voice.channel
+        try:
+            voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+            voice_channel: discord.VoiceChannel = ctx.user.voice.channel
 
-        if voice_instance and voice_instance.is_connected():
-            await voice_instance.disconnect(force=True)
-            response = f"Disconnected from {voice_channel.name}"
-        else:
-            response = "I am not in a voice channel."
+            if voice_instance and voice_instance.is_connected():
+                await voice_instance.disconnect(force=True)
+                response = f"Disconnected from {voice_channel.name}"
+            else:
+                response = "I am not in a voice channel."
         
-        await ctx.response.send_message(response)
+        except AttributeError:
+            response = errors['no_vc']
+        finally:
+            await ctx.response.send_message(response)
 
     # Media audio
 
