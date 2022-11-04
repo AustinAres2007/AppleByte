@@ -1,5 +1,5 @@
 from http.client import HTTPException
-import discord, youtubesearchpython, youtube_dl, os, threading
+import discord, youtubesearchpython, youtube_dl, os, threading, asyncio
 from discord.ext import commands
 from discord.utils import get
 
@@ -30,6 +30,7 @@ class music(commands.Cog):
     @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.", extras={
         discord.ClientException: "Already in VC."
         })
+
     @discord.app_commands.checks.cooldown(1, 15)
     async def join_vc(self, ctx: discord.Interaction):
         voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
@@ -74,18 +75,25 @@ class music(commands.Cog):
             return await ctx.response.send_message("You are already playing audio.")
         except FileNotFoundError:
             pass
-        
+
+        def send(message: str):
+            asyncio.run_coroutine_threadsafe(ctx.channel.send(message), self.client.loop)
+
         def queue_proxy():
             try:
                 queue = self.client.queue[ctx.guild_id]
-                to_play = queue[0]['link'] if queue else None
+                try:
+                    to_play = queue[0]['link'] if queue else None
 
-                del self.client.queue[ctx.guild_id][0]
-                _download_media(to_play)
+                    media_data = self.client.queue[ctx.guild_id][0]
+                    del self.client.queue[ctx.guild_id][0]
+                    _download_media(to_play, media_data)
+                except IndexError:
+                    send("Queue now empty, finished playing.")
             except IndexError:
                 return
 
-        def _download_media(link):
+        def _download_media(link: str, metadata: dict):
             if link:
                 try:
                     if os.path.isfile(music_path):
@@ -93,36 +101,76 @@ class music(commands.Cog):
                 except KeyError:
                     self.client.queue[ctx.guild_id] = []
                 finally:
-                    with youtube_dl.YoutubeDL(local_opts) as ydl:
-                        ydl.download([str(link)])          
+                    try:
+                        with youtube_dl.YoutubeDL(local_opts) as ydl:
+                            ydl.download([str(link)])          
+                    
+                        send(f'Playing "{metadata["title"]}"')
+                        source = discord.FFmpegOpusAudio(music_path)
+                        voice_instance.play(source, after=lambda e: queue_proxy())
+                    except youtube_dl.utils.DownloadError:
+                        send("Could not download media, please try again.")
 
-                    source = discord.FFmpegOpusAudio(music_path)
-                    voice_instance.play(source, after=lambda e: queue_proxy())
-        
         search_results = youtubesearchpython.VideosSearch(media, limit=1)
         media_data = search_results.result()["result"][0]
         link = media_data['link']
 
-        await ctx.response.send_message(f'Selected: {media_data["title"]}\nLink: {link}')
-        threading.Thread(target=_download_media, args=(link,)).start()
+        if len(media_data['duration'].split(":")) > 2:
+            await ctx.response.send_message("Media cannot be more than an hour long.")
+        else:
+            await ctx.channel.send(f'Selected: {media_data["title"]}\nLink: {link}\nDownloading..\n')
+            threading.Thread(target=_download_media, args=(link, media_data,)).start()
 
-    @discord.app_commands.command(name='queue', description="Queues a song.", extras={HTTPException: "Could not send reply."})
-    @discord.app_commands.describe(media="Media Title")
-    async def queue_media(self, ctx: discord.Interaction, media: str):
-        search_results = youtubesearchpython.VideosSearch(media, limit=1)
-        media_data = search_results.result()["result"][0]
-        video_data = {
-                    "link": media_data['link'],
-                    "name": media_data['title']
-        }
+    @discord.app_commands.command(name='skip', description="Skips media.", extras={AttributeError: "You're not in a voice channel."})
+    @discord.app_commands.checks.cooldown(1, 15)
+    async def skip_media(self, ctx: discord.Interaction):
+        reply = "Error"
         try:
-            self.client.queue[ctx.guild_id].append(video_data)
+            voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+            voice_channel: discord.VoiceChannel = ctx.user.voice.channel
+
+            try:
+                if voice_instance and voice_instance.is_connected():
+                    voice_instance.stop()
+                    reply = f"Skipped Media."
+                else:
+                    reply = "I am not in any voice channel"
+
+            except AttributeError:
+                reply = "You are not playing any media."
+
+        except AttributeError:
+            reply = "You're not in a voice channel."
+        finally:
+            await ctx.response.send_message(reply)
+
+    @discord.app_commands.command(name='queue', description="Queues a song, or displays the queue if did not pass a keyword.", extras={HTTPException: "Could not send reply."})
+    @discord.app_commands.describe(media="Media Title")
+    async def queue_media(self, ctx: discord.Interaction, media: str=None):
+        try:
+            if media is None:
+                reply = [f"{x['title']}\nAuthor: {x['channel']['name']}" for x in self.client.queue[ctx.guild_id]]
+                if not reply:
+                    reply = "No queued songs."
+                else:
+                    reply = "\n\n".join(reply)
+
+                return await ctx.response.send_message(reply)
+
+            if len(self.client.queue[ctx.guild_id]) > 15:
+                return await ctx.response.send_message("Cannot add more than 15 songs in the queue.")
+
+            search_results = youtubesearchpython.VideosSearch(media, limit=1)
+            media_data = search_results.result()["result"][0]
+            try:
+                self.client.queue[ctx.guild_id].append(media_data)
+            except KeyError:
+                self.client.queue[ctx.guild_id] = []
+                self.client.queue[ctx.guild_id].append(media_data)
+
+            await ctx.response.send_message(f'Added \n\n"{media_data["title"]}" to the queue. \n({media_data["link"]})')
         except KeyError:
             self.client.queue[ctx.guild_id] = []
-            self.client.queue[ctx.guild_id].append(video_data)
-
-
-        await ctx.response.send_message(f'Added \n\n"{media_data["title"]}" to the queue. \n({media_data["link"]})')
 
 async def setup(client: commands.Bot):
     await client.add_cog(music(client))

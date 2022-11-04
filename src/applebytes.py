@@ -24,8 +24,11 @@ class AppleByteClient(commands.AutoShardedBot):
         self.queue = {}
         self.cwd = PATH
 
+
     async def on_ready(self):
         print(f"{BOT_NAME} Online")
+        for guild in self.guilds:
+            self.queue[guild.id] = []
     
     async def setup_hook(self):
         for file in os.listdir(f"{PATH}/src/cogs"):
@@ -42,5 +45,4 @@ async def main():
     async with AppleByteClient(command_prefix=PREFIX, intents=intents) as client:
         await client.start(TOKEN)
 
-print("Directory: ", PATH)
 asyncio.run(main())
