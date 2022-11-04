@@ -21,11 +21,16 @@ youtube_dl_opts = {
     }],
 }
 class music(commands.Cog):
+
+    # Initialisation
+
     def __init__(self, client: commands.Bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         print("Music Loaded")
         self.client = client
+    
+    # Joining and Leaving Voice Channel
     
     @discord.app_commands.command(name="join", description="Will join the Voice Channel you are in.")
     @discord.app_commands.checks.cooldown(1, 15)
@@ -44,6 +49,22 @@ class music(commands.Cog):
 
         await ctx.response.send_message(responce)
     
+    @discord.app_commands.command(name="disconnect", description="Disconnects from users voice channel.")
+    @discord.app_commands.checks.cooldown(1, 20)
+    async def disconnect_vc(self, ctx: discord.Interaction):
+        voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+        voice_channel: discord.VoiceChannel = ctx.user.voice.channel
+
+        if voice_instance and voice_instance.is_connected():
+            await voice_instance.disconnect(force=True)
+            response = f"Disconnected from {voice_channel.name}"
+        else:
+            response = "I am not in a voice channel."
+        
+        await ctx.response.send_message(response)
+
+    # Media audio
+
     @discord.app_commands.command(name="play", description="Will play the requested song from the YouTube library.", extras={
         discord.ClientException: "Already playing audio.", 
     })
@@ -118,33 +139,6 @@ class music(commands.Cog):
             await ctx.channel.send(f'Selected: {media_data["title"]}\nLink: {link}\nDownloading..\n')
             threading.Thread(target=_download_media, args=(link, media_data,)).start()
     
-    async def voice_checks(ctx, method: str, success_message: str):
-        reply = "Error"
-        try:
-            voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
-            voice_channel: discord.VoiceChannel = ctx.user.voice.channel
-
-            try:
-                if voice_instance and voice_instance.is_connected():
-                    voice_instance.stop()
-                    getattr(voice_channel, method)
-                    reply = success_message
-                else:
-                    reply = "I am not in any voice channel"
-
-            except AttributeError:
-                reply = "You are not playing any media."
-
-        except AttributeError:
-            reply = "You're not in a voice channel."
-        finally:
-            await ctx.response.send_message(reply)
-
-    @discord.app_commands.command(name='skip', description="Skips media.", extras={AttributeError: "You're not in a voice channel."})
-    @discord.app_commands.checks.cooldown(1, 15)
-    async def skip_media(self, ctx: discord.Interaction):
-        await voice_checks(ctx, "stop", "Skipped media.")
-
     @discord.app_commands.command(name='queue', description="Queues a song, or displays the queue if did not pass a keyword.", extras={HTTPException: "Could not send reply."})
     @discord.app_commands.describe(media="Media Title")
     async def queue_media(self, ctx: discord.Interaction, media: str=None):
@@ -173,10 +167,51 @@ class music(commands.Cog):
         except KeyError:
             self.client.queue[ctx.guild_id] = []
 
+    # Media control commands
+
+    async def voice_checks(self, ctx, method: str, success_message: str):
+        """
+        voice_checks
+
+        This function makes the "skip", "pause", and "resume"
+        easier to program for. Because they require the same checks, and the only difference is the
+        success message and the function call. (Pass message context, the method, and the message to send.)
+        """
+
+        reply = "Error"
+        try:
+            voice_instance: discord.VoiceClient = get(self.client.voice_clients, guild=ctx.guild)
+            voice_channel: discord.VoiceChannel = ctx.user.voice.channel
+
+            try:
+                if voice_instance and voice_instance.is_connected():
+                    getattr(voice_instance, method)()
+                    reply = success_message
+                else:
+                    reply = "I am not in any voice channel"
+
+            except AttributeError:
+                reply = "You are not playing any media."
+
+        except AttributeError:
+            reply = "You're not in a voice channel."
+        finally:
+            await ctx.response.send_message(reply)
+
+    @discord.app_commands.command(name='skip', description="Skips media.", extras={AttributeError: "You're not in a voice channel."})
+    @discord.app_commands.checks.cooldown(1, 15)
+    async def skip_media(self, ctx: discord.Interaction):
+        await self.voice_checks(ctx, "stop", "Skipped media.")
+
+    @discord.app_commands.command(name="resume", description="Resumes media.")
+    @discord.app_commands.checks.cooldown(1, 10)
+    async def resume_media(self, ctx: discord.Interaction):
+        await self.voice_checks(ctx, "resume", "Resumed media.")
+
     @discord.app_commands.command(name="pause", description="Pauses media.")
     @discord.app_commands.checks.cooldown(1, 10)
     async def pause_media(self, ctx: discord.Interaction):
-        await voice_checks(ctx, "pause", "Paused media.")
+        await self.voice_checks(ctx, "pause", "Paused media.")
 
 async def setup(client: commands.Bot):
     await client.add_cog(music(client))
