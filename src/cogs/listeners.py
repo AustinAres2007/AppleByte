@@ -9,6 +9,7 @@ class Listeners(commands.Cog, name="listeners"):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         self.client.queue[guild.id] = []
+        self.client.asy_download[guild.id] = False
 
 async def setup(client: commands.Bot):
     await client.add_cog(Listeners(client))

@@ -95,6 +95,8 @@ class music(commands.Cog):
             return await ctx.response.send_message("I am currently playing audio.")
         
         music_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-music{PREFERRED_FILEEXTENSION}"
+        temp_path = f"{self.client.cwd}/src/data/music/{ctx.guild_id}-temp{PREFERRED_FILEEXTENSION}"
+
         local_opts = youtube_dl_opts
         local_opts['outtmpl'] = music_path
 
@@ -107,6 +109,19 @@ class music(commands.Cog):
 
         def send(message: str):
             asyncio.run_coroutine_threadsafe(ctx.channel.send(message), self.client.loop)
+        
+        def download_proxy(__link__: str, secondary: bool):
+            temp_opts = local_opts
+
+            if secondary:
+                temp_opts['outtmpl'] = temp_path
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            with youtube_dl.YoutubeDL(temp_opts) as ydl:
+                self.client.asy_download[ctx.guild_id] = True
+                ydl.download([str(__link__)])
+                self.client.asy_download[ctx.guild_id] = False
 
         def queue_proxy():
             try:
@@ -116,13 +131,13 @@ class music(commands.Cog):
 
                     media_data = self.client.queue[ctx.guild_id][0]
                     del self.client.queue[ctx.guild_id][0]
-                    _download_media(to_play, media_data)
+                    _download_media(to_play, media_data, False)
                 except IndexError:
                     send("Queue now empty, finished playing.")
             except IndexError:
                 return
 
-        def _download_media(link: str, metadata: dict):
+        def _download_media(link: str, metadata: dict, download_link: bool):
             if link:
                 try:
                     if os.path.isfile(music_path):
@@ -131,12 +146,23 @@ class music(commands.Cog):
                     self.client.queue[ctx.guild_id] = []
                 finally:
                     try:
-                        with youtube_dl.YoutubeDL(local_opts) as ydl:
-                            ydl.download([str(link)])          
-                    
+                        if not download_link:
+                            while self.client.asy_download[ctx.guild_id]:
+                                print(self.client.asy_download[ctx.guild_id])
+                                continue
+                            else:
+                                os.rename(temp_path, music_path)
+                        else:
+                            download_proxy(link, False)
+
                         send(f'Playing "{metadata["title"]}"')
+
+                        if self.client.queue[ctx.guild_id]:
+                            threading.Thread(target=download_proxy, args=(self.client.queue[ctx.guild_id][0]['link'], True,)).start()
+
                         source = discord.FFmpegOpusAudio(music_path)
                         voice_instance.play(source, after=lambda e: queue_proxy())
+
                     except youtube_dl.utils.DownloadError:
                         send("Could not download media, please try again.")
 
@@ -148,7 +174,7 @@ class music(commands.Cog):
             await ctx.response.send_message("Media cannot be more than an hour long.")
         else:
             await ctx.channel.send(f'Selected: {media_data["title"]}\nLink: {link}\nDownloading..\n')
-            threading.Thread(target=_download_media, args=(link, media_data,)).start()
+            threading.Thread(target=_download_media, args=(link, media_data, True,)).start()
     
     @discord.app_commands.command(name='queue', description="Queues a song, or displays the queue if did not pass a keyword.", extras={HTTPException: "Could not send reply."})
     @discord.app_commands.describe(media="Media Title")
@@ -168,15 +194,38 @@ class music(commands.Cog):
 
             search_results = youtubesearchpython.VideosSearch(media, limit=1)
             media_data = search_results.result()["result"][0]
-            try:
-                self.client.queue[ctx.guild_id].append(media_data)
-            except KeyError:
-                self.client.queue[ctx.guild_id] = []
-                self.client.queue[ctx.guild_id].append(media_data)
+            
+            if len(media_data['duration'].split(":")) > 2:
+                await ctx.response.send_message("You cannot download media more than an hour long.")
+            else:
+                try:
+                    self.client.queue[ctx.guild_id].append(media_data)
+                except KeyError:
+                    self.client.queue[ctx.guild_id] = []
+                    self.client.queue[ctx.guild_id].append(media_data)
 
             await ctx.response.send_message(f'Added \n\n"{media_data["title"]}" to the queue. \n({media_data["link"]})')
         except KeyError:
             self.client.queue[ctx.guild_id] = []
+    
+    @discord.app_commands.command(name="clear", description="Pops specified amount of videos off the queue.")
+    @discord.app_commands.checks.cooldown(1, 10)
+    @discord.app_commands.describe(many="How many songs to clear from queue. Type 0 or leave the prompt empty to clear all.")
+    async def clear_queue(self, ctx: discord.Interaction, many: int=0):
+        final_response = "Error"
+        if many > len(self.client.queue[ctx.guild_id]):
+            final_response = "Not enough videos to clear."
+        else:
+            if not many:
+                response = "all"
+                self.client.queue[ctx.guild_id].clear()
+            else:
+                self.client.queue[ctx.guild_id] = self.client.queue[ctx.guild_id][:many]
+                response = many
+
+            final_response = f"Popped {response} video(s) off the end of the queue."
+
+        await ctx.response.send_message(final_response)
 
     # Media control commands
 

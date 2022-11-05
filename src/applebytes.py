@@ -22,14 +22,17 @@ class AppleByteClient(commands.AutoShardedBot):
         super().__init__(*args, **kwargs)
 
         self.queue = {}
+        self.asy_download = {}
         self.cwd = PATH
 
 
     async def on_ready(self):
         print(f"{BOT_NAME} Online")
+        
         for guild in self.guilds:
             self.queue[guild.id] = []
-    
+            self.asy_download[guild.id] = False
+            
     async def setup_hook(self):
         for file in os.listdir(f"{PATH}/src/cogs"):
             if file.endswith(".py"):
