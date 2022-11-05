@@ -148,7 +148,6 @@ class music(commands.Cog):
                     try:
                         if not download_link:
                             while self.client.asy_download[ctx.guild_id]:
-                                print(self.client.asy_download[ctx.guild_id])
                                 continue
                             else:
                                 os.rename(temp_path, music_path)
